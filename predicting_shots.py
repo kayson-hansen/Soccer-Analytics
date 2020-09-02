@@ -7,10 +7,9 @@ import torch
 import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms, datasets
 import torch.optim as optim
 
-filename = 'events.csv'
+filename = 'datasets/events.csv'
 events = pd.read_csv(filename)
 shots = events[(events.event_type==1)]
 
@@ -23,9 +22,14 @@ shot_data.columns = ['is_goal', 'fast_break', 'loc_centre_box', 'loc_diff_angle_
                     'right_foot', 'left_foot', 'header', 'no_assist', 'assist_pass', 'assist_cross', 'assist_header', 
                     'assist_through_ball', 'open_play', 'set_piece', 'corner', 'free_kick']
 
+# remove some shots that missed to balance the dataset, because 
+# there are far more shots that miss than score in soccer
+adjusted_shot_data = shot_data.groupby('is_goal')
+adjusted_shot_data = pd.DataFrame(adjusted_shot_data.apply(lambda x: x.sample(adjusted_shot_data.size().min()).reset_index(drop=True)))
+adjusted_shot_data = adjusted_shot_data.sample(frac=1).reset_index(drop=True)
 
-shot_chars = shot_data.iloc[:,1:]
-shot_results = shot_data.iloc[:,0]
+shot_chars = adjusted_shot_data.iloc[:,1:]
+shot_results = adjusted_shot_data.iloc[:,0]
 X = torch.FloatTensor(shot_chars.values)
 y = torch.FloatTensor(shot_results.values)
 
@@ -57,13 +61,14 @@ class Net(nn.Module):
 
 net = Net(len(X[0]))
 
-optimizer = optim.Adam(net.parameters(), lr=0.001)
+optimizer = optim.Adam(net.parameters(), lr=0.0001)
 loss_function = nn.BCELoss()
 
 BATCH_SIZE = 100
-EPOCHS = 1000
+EPOCHS = 100
 
 # training step
+net.train()
 for epoch in tqdm(range(EPOCHS)):
     optimizer.zero_grad()
     for i in range(0, len(train_X), BATCH_SIZE):
@@ -74,7 +79,7 @@ for epoch in tqdm(range(EPOCHS)):
         loss = loss_function(output, batch_y)
         loss.backward() # stochastic gradient descent
         optimizer.step() # updates the weights
-    if epoch % 100 == 0:
+    if epoch % 10 == 0:
         print(loss)
 
 
@@ -82,6 +87,7 @@ for epoch in tqdm(range(EPOCHS)):
 correct = 0
 total = 0
 
+net.eval()
 with torch.no_grad():
     for i in range(len(test_X)):
         output = net(test_X[i])[0]
