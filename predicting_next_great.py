@@ -58,9 +58,7 @@ means = means.rename(index={indices[3]: 'Next Messis'})
 means = means.rename(index={indices[4]: 'Neymar'})
 means = means.rename(index={indices[5]: 'Next Neymars'})
 
-
 means.to_csv('datasets/next_great_players_averages.csv')
-
 
 
 # The code below was used to determine optimal number of clusters using
