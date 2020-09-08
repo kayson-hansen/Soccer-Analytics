@@ -1,3 +1,10 @@
+"""
+This file attempts to predict the outcome of a shot based on a multitude of factors,
+such as who's shooting it, where it's being shot from, if it's from a set piece, if
+it's from open play, etc. A neural network is trained using shot data, and then tested 
+to see how accurate its predictions are. 
+"""
+
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -34,7 +41,6 @@ X = torch.FloatTensor(shot_chars.values)
 y = torch.FloatTensor(shot_results.values)
 
 
-
 VAL_PCT = 0.2
 val_size = int(len(X)*VAL_PCT)
 
@@ -44,6 +50,8 @@ train_y = y[:-val_size]
 test_X = X[-val_size:]
 test_y = y[-val_size:]
 
+
+# Deep learning model
 class Net(nn.Module):
     def __init__(self, input_size):
         super().__init__()
@@ -66,6 +74,7 @@ loss_function = nn.BCELoss()
 
 BATCH_SIZE = 100
 EPOCHS = 100
+
 
 # training step
 net.train()
